@@ -2,7 +2,7 @@ GlowScript 2.9 VPython
 
 #establish scene with ground and coordinate system
 sceneProjectile = canvas(title = "<b>3D Projectile Motion</b> \n\n ", caption = " <b> Directions:</b> Right click to rotate. Scroll to zoom. \n\n  Shift + left click to move screen. Launch to start.\n\n",
-width = 1000, height = 900, align = "left")
+width = 1000, height = 1000, align = "left")
 ground = box(pos = vector(0, 0, 0), size = vector(12, 0.01, 12), color = color.green) 
 def coordinate(dimensions, r, o): 
     cylinder(axis= vector(-1 * dimensions, 0, 0), radius = r, opacity = o) 
