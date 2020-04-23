@@ -1,0 +1,133 @@
+GlowScript 2.9 VPython
+
+#establish scene with ground and coordinate system
+sceneProjectile = canvas(title = "3D Projectile Motion \n\n", width = 1000, height = 900, align = "left")
+ground = box(pos = vector(0, 0, 0), size = vector(12, 0.01, 12), color = color.green) 
+def coordinate(dimensions, r, o): 
+    cylinder(axis= vector(-1 * dimensions, 0, 0), radius = r, opacity = o) 
+    cylinder(axis= vector(dimensions, 0, 0), radius = r, opacity = o)
+    cylinder(axis= vector(0, -1 * dimensions, 0), radius = r, opacity = o)
+    cylinder(axis= vector(0, dimensions, 0), radius = r, opacity = o)
+    cylinder(axis= vector(0, 0, -1 * dimensions), radius = r, opacity = o)
+    cylinder(axis= vector(0, 0, dimensions), radius = r, opacity = o)
+    label(pos = vector(dimensions, 0, 0), text = "+x")
+    label(pos = vector(0, dimensions, 0), text = "+y") 
+    label(pos = vector(0, 0, dimensions), text = "+z")
+coordinate(7, 0.01, 1) 
+
+#sliders
+def adjustxy(): 
+    angleSliderReadoutXY.text = angleSliderXY.value + " degrees" 
+angleSliderXY = slider(left=10, min=0, max=90, step=1,bind=adjustxy, value = 45)
+sceneProjectile.append_to_caption(" AngleXY = ")
+angleSliderReadoutXY = wtext(text= angleSliderXY.value)
+sceneProjectile.append_to_caption("\n\n")
+    
+def adjustxz(): 
+    angleSliderReadoutXZ.text = angleSliderXZ.value + " degrees" 
+angleSliderXZ = slider(left=10, min=-90, max=90, step=1,bind=adjustxz, value = 0)
+sceneProjectile.append_to_caption(" AngleXZ = ")
+angleSliderReadoutXZ = wtext(text= angleSliderXZ.value)
+sceneProjectile.append_to_caption("\n\n")
+
+def adjustg(): 
+    angleSliderReadoutg.text = angleSliderg.value 
+angleSliderg = slider(left=10, min=0, max=90, step=0.1,bind=adjustg, value = 9.8)
+sceneProjectile.append_to_caption(" g = ")
+angleSliderReadoutg = wtext(text= angleSliderg.value)
+sceneProjectile.append_to_caption("\n\n")
+
+def adjustspeed(): 
+    angleSliderReadoutspeed.text = angleSliderspeed.value 
+angleSliderspeed = slider(left=10, min=0, max=15, step=0.5,bind=adjustspeed, value = 5)
+sceneProjectile.append_to_caption(" Speed = ")
+angleSliderReadoutspeed = wtext(text= angleSliderspeed.value)
+sceneProjectile.append_to_caption("\n\n")
+
+def adjustdrag(): 
+    angleSliderReadoutdrag.text = angleSliderdrag.value 
+angleSliderdrag = slider(left=10, min=0, max=20, step=1,bind=adjustdrag)
+sceneProjectile.append_to_caption(" Drag Coefficient = ")
+angleSliderReadoutdrag = wtext(text= angleSliderdrag.value)
+sceneProjectile.append_to_caption("\n\n")
+
+def adjustlift(): 
+    angleSliderReadoutlift.text = angleSliderlift.value 
+angleSliderlift = slider(left=10, min=0, max=20, step=1,bind=adjustlift)
+sceneProjectile.append_to_caption(" Lift Coefficient = ")
+angleSliderReadoutlift = wtext(text= angleSliderlift.value)
+sceneProjectile.append_to_caption("\n\n")
+
+#create graphs
+graph(width = 400, height = 200, align = "right", xtitle = "Time (s)", ytitle = "Vertical Velocity (m/s)", xmin = 0, xmax = 3, ymin = -10, ymax = 10) 
+graphvy = gcurve(color = color.cyan)
+graph(width = 400, height = 200, align = "right", xtitle = "Time (s)", ytitle = "Y Position (m)", xmin = 0, xmax = 3, ymin = 0, ymax = 10) 
+graphy = gcurve(color = color.green)
+graph(width = 400, height = 200, align = "right", xtitle = "Time (s)", ytitle = "Y Acceleration (m/s<sup>2</sup>)", xmin = 0, xmax = 3, ymin = -20, ymax = 0) 
+graphay = gcurve(color = color.purple)
+graph(width = 400, height = 200, align = "right", xtitle = "Time (s)", ytitle = "Z Position (m)", xmin = 0, xmax = 3, ymin = -5, ymax = 5) 
+graphz = gcurve(color = color.magenta)
+
+#begin launch simulation 
+def launch(): 
+    
+    #reset graphs
+    graphvy.delete()
+    graphy.delete()
+    graphz.delete()
+    graphay.delete()
+    
+    #create new ball
+    ball = sphere(pos = vector(-5.9, 0.1, 0), radius = 0.1, color = color.red, make_trail= True, trail_type = "points") 
+    
+    #convert to radians
+    anglexy = angleSliderXY.value * pi/180
+    anglexz = angleSliderXZ.value * pi/180
+        
+    #define variables
+    g = angleSliderg.value
+    ball.speed = angleSliderspeed.value
+    ball.velocity = vector(ball.speed * cos(anglexy) * cos(anglexz), ball.speed * sin(anglexy), ball.speed * cos(anglexy) * sin(anglexz))
+    dragCoefficient = angleSliderdrag.value
+    liftCoefficient = angleSliderlift.value  
+    
+    #define constants
+    t = 0
+    dt = 0.02 
+    ball.mass = 1.0
+    airDensity = 1.0
+    area = pi * ball.radius**2 
+        
+    #dragforce = 1/2 * rho * C_d * A * |v|^2 * -vhat
+    #drag force points in the direction opposite the velocity vector, requiring a unit vector to give it the proper direction 
+    #liftforce = 1/2 * rho * C_l * A * |v|^2 * vhat_perp
+    #lift force points in the direction perpendicular to the direction of travel, requiring a cross product between the z and x axis to give the proper direction up
+        
+    while ball.pos.y >= 0.1: 
+            
+        rate(50)
+            
+        #unit vector and cross product
+        vhat = ball.velocity / mag(ball.velocity)
+        vhat_perp = cross(vector(0, 0, 1), vhat)
+                    
+        dragforce = 0.5 * dragCoefficient * airDensity * area * mag(ball.velocity)**2 * -vhat
+        liftforce = 0.5 * liftCoefficient * airDensity * area * mag(ball.velocity)**2 * vhat_perp
+        gravforce = vector(0, ball.mass * -g, 0) 
+        force = gravforce + dragforce + liftforce
+                    
+        #animation
+        ball.velocity += force / ball.mass * dt 
+        ball.pos += ball.velocity * dt 
+        t += dt 
+        
+        graphvy.plot(t, ball.velocity.y)
+        graphy.plot(t, ball.pos.y)
+        graphz.plot(t, ball.pos.z)
+        graphay.plot(t, force.y/ball.mass) 
+    
+    #make ball disappear so that a new one can launch
+    ball.visible = False
+            
+button(text = "Launch", bind = launch)
+
